@@ -16,6 +16,14 @@ export abstract class ContractHandler {
         return false;
     }
 
+    static async beginUpgrade(_client: PoolClient): Promise<void> {
+        return;
+    }
+
+    static async finishUpgrade(_client: PoolClient): Promise<void> {
+        return;
+    }
+
     static async upgrade(_client: PoolClient, _version: string): Promise<void> {
         return;
     }

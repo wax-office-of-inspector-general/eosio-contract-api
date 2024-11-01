@@ -32,6 +32,8 @@ export async function upgradeDb(database: PostgresConnection): Promise<void> {
     const availableVersions: string[] = fs.readdirSync('./definitions/migrations')
         .sort((a, b) => compareVersionString(a, b));
 
+    const upgradeVersions = availableVersions.filter(version => compareVersionString(version, currentVersion) > 0);
+
     // init contracts
     for (const handlerName of availableContracts) {
         const handler = availableHandlers.find(row => row.handlerName === handlerName);
@@ -47,6 +49,10 @@ export async function upgradeDb(database: PostgresConnection): Promise<void> {
 
             const pastVersions = availableVersions.filter(version => compareVersionString(version, currentVersion) <= 0);
 
+            if (upgradeVersions.length === 0) {
+                await handler.beginUpgrade(client);
+            }
+
             for (const version of pastVersions) {
                 const filename = './definitions/migrations/' + version + '/' + handlerName + '.sql';
 
@@ -56,22 +62,30 @@ export async function upgradeDb(database: PostgresConnection): Promise<void> {
 
                 await handler.upgrade(client, version);
             }
+
+            if (upgradeVersions.length === 0) {
+                await handler.finishUpgrade(client);
+            }
         }
     }
 
     await client.query('COMMIT');
 
-    const upgradeVersions = availableVersions.filter(version => compareVersionString(version, currentVersion) > 0);
-
     if (upgradeVersions.length > 0) {
         logger.info('Found ' + upgradeVersions.length + ' available upgrades. Starting to upgradeDB...');
+
+        await client.query('BEGIN');
+
+        for (const handlerName of availableContracts) {
+            const handler = availableHandlers.find(row => row.handlerName === handlerName);
+
+            await handler.beginUpgrade(client);
+        }
 
         for (const version of upgradeVersions) {
             const versionDir = `${__dirname}/../../definitions/migrations/${version}/`;
 
             logger.info('Upgrade to ' + version + ' ...');
-
-            await client.query('BEGIN');
 
             await client.query(fs.readFileSync(`${versionDir}database.sql`, {
                 encoding: 'utf8'
@@ -91,9 +105,15 @@ export async function upgradeDb(database: PostgresConnection): Promise<void> {
             }
 
             logger.info('Successfully upgraded to ' + version);
-
-            await client.query('COMMIT');
         }
+
+        for (const handlerName of availableContracts) {
+            const handler = availableHandlers.find(row => row.handlerName === handlerName);
+
+            await handler.finishUpgrade(client);
+        }
+
+        await client.query('COMMIT');
     }
 
     client.release();

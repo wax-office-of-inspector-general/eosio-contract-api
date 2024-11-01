@@ -7,7 +7,7 @@ import {
     LogBurnAssetActionData,
     LogMintAssetActionData,
     LogSetDataActionData,
-    LogTransferActionData
+    LogTransferActionData, MoveActionData
 } from '../types/actions';
 import { ShipBlock } from '../../../../types/ship';
 import { eosioTimestampToDate, splitEosioToken } from '../../../../utils/eosio';
@@ -35,6 +35,7 @@ export function assetProcessor(core: AtomicAssetsHandler, processor: DataProcess
                 schema_name: trace.act.data.schema_name,
                 template_id: trace.act.data.template_id === -1 ? null : trace.act.data.template_id,
                 owner: trace.act.data.new_asset_owner,
+                holder: trace.act.data.new_asset_owner,
                 mutable_data: encodeDatabaseJson(convertAttributeMapToObject(trace.act.data.mutable_data)),
                 immutable_data: encodeDatabaseJson(convertAttributeMapToObject(trace.act.data.immutable_data)),
                 burned_by_account: null,
@@ -158,6 +159,7 @@ export function assetProcessor(core: AtomicAssetsHandler, processor: DataProcess
         async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<LogTransferActionData>): Promise<void> => {
             await db.update('atomicassets_assets', {
                 owner: trace.act.data.to,
+                holder: trace.act.data.to,
                 transferred_at_block: block.block_num,
                 transferred_at_time: eosioTimestampToDate(block.timestamp).getTime(),
                 updated_at_block: block.block_num,
@@ -186,6 +188,25 @@ export function assetProcessor(core: AtomicAssetsHandler, processor: DataProcess
                     asset_id: assetID
                 })), ['contract', 'transfer_id', 'asset_id']);
             }
+
+            notifier.sendActionTrace('transfers', block, tx, trace);
+        }, AtomicAssetsUpdatePriority.ACTION_UPDATE_ASSET.valueOf()
+    ));
+
+    destructors.push(processor.onActionTrace(
+        contract, 'move',
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<MoveActionData>): Promise<void> => {
+            await db.update('atomicassets_assets', {
+                owner: trace.act.data.owner,
+                holder: trace.act.data.to,
+                transferred_at_block: block.block_num,
+                transferred_at_time: eosioTimestampToDate(block.timestamp).getTime(),
+                updated_at_block: block.block_num,
+                updated_at_time: eosioTimestampToDate(block.timestamp).getTime(),
+            }, {
+                str: 'contract = $1 AND asset_id = ANY ($2) AND owner = $3',
+                values: [contract, trace.act.data.asset_ids, trace.act.data.from]
+            }, ['contract', 'asset_id']);
 
             notifier.sendActionTrace('transfers', block, tx, trace);
         }, AtomicAssetsUpdatePriority.ACTION_UPDATE_ASSET.valueOf()

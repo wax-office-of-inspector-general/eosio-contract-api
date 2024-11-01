@@ -1,6 +1,6 @@
 CREATE OR REPLACE VIEW atomicassets_schemas_master AS
     SELECT DISTINCT ON ("schema".contract, "schema".collection_name, "schema".schema_name)
-        "schema".contract, "schema".schema_name, "schema".format,
+        "schema".contract, "schema".schema_name, "schema".format, "schema".types,
         "schema".collection_name, collection.authorized_accounts,
         json_build_object(
             'collection_name', collection.collection_name,

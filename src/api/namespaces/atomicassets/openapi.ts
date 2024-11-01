@@ -47,6 +47,7 @@ export const atomicassetsComponents = {
             contract: {type: 'string'},
             asset_id: {type: 'string'},
             owner: {type: 'string'},
+            holder: {type: 'string'},
             name: {type: 'string'},
             is_transferable: {type: 'boolean'},
             is_burnable: {type: 'boolean'},
@@ -75,7 +76,9 @@ export const atomicassetsComponents = {
                             type: 'object',
                             properties: {
                                 name: {type: 'string'},
-                                type: {type: 'string'}
+                                type: {type: 'string'},
+                                mediatype: {type: 'string'},
+                                info: {type: 'string'}
                             }
                         }
                     },
@@ -92,10 +95,14 @@ export const atomicassetsComponents = {
                     is_transferable: {type: 'boolean'},
                     is_burnable: {type: 'boolean'},
 
+                    mutable_data: {type: 'object'},
                     immutable_data: {type: 'object'},
 
+                    deleted_at_time: {type: 'string'},
+                    deleted_at_block: {type: 'string'},
+
                     created_at_time: {type: 'string'},
-                    created_at_block: {type: 'string'}
+                    created_at_block: {type: 'string'},
                 }
             },
 
@@ -155,7 +162,9 @@ export const atomicassetsComponents = {
                     type: 'object',
                     properties: {
                         name: {type: 'string'},
-                        type: {type: 'string'}
+                        type: {type: 'string'},
+                        mediatype: {type: 'string'},
+                        info: {type: 'string'},
                     }
                 }
             },
@@ -189,12 +198,16 @@ export const atomicassetsComponents = {
             is_transferable: {type: 'boolean'},
             is_burnable: {type: 'boolean'},
 
+            mutable_data: {type: 'object'},
             immutable_data: {type: 'object'},
+
+            deleted_at_time: {type: 'string'},
+            deleted_at_block: {type: 'string'},
 
             created_at_time: {type: 'string'},
             created_at_block: {type: 'string'},
 
-            scheme: {
+            schema: {
                 type: 'object',
                 properties: {
                     schema_name: {type: 'string'},
@@ -204,7 +217,9 @@ export const atomicassetsComponents = {
                             type: 'object',
                             properties: {
                                 name: {type: 'string'},
-                                type: {type: 'string'}
+                                type: {type: 'string'},
+                                mediatype: {type: 'string'},
+                                info: {type: 'string'},
                             }
                         }
                     },
@@ -286,6 +301,13 @@ export const extendedAssetFilterParameters = [
         name: 'owner',
         in: 'query',
         description: 'Filter by owner',
+        required: false,
+        schema: {type: 'string'}
+    },
+    {
+        name: 'holder',
+        in: 'query',
+        description: 'Filter by holder',
         required: false,
         schema: {type: 'string'}
     },
