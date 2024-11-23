@@ -117,11 +117,11 @@ export default class AtomicMarketHandler extends ContractHandler {
 
     static async beginUpgrade(client: PoolClient): Promise<void> {
         for (const view of AtomicMarketHandler.views.reverse()) {
-            await client.query('DROP VIEW IF EXISTS "' + view + '";');
+            await client.query('DROP VIEW IF EXISTS "' + view + '" CASCADE;');
         }
 
         for (const procedure of AtomicMarketHandler.procedures.reverse()) {
-            await client.query('DROP PROCEDURE IF EXISTS "' + procedure + '";');
+            await client.query('DROP PROCEDURE IF EXISTS "' + procedure + '" CASCADE;');
         }
     }
 

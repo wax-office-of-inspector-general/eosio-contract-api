@@ -45,7 +45,7 @@ export function generateMoveSchema(assetSchema: string): any {
         type: 'object',
         properties: {
             contract: {type: 'string'},
-            transfer_id: {type: 'string'},
+            move_id: {type: 'string'},
             sender_name: {type: 'string'},
             recipient_name: {type: 'string'},
             memo: {type: 'string'},
@@ -163,6 +163,9 @@ export const atomicassetsComponents = {
             notify_accounts: {type: 'array', items: {type: 'string'}},
             market_fee: {type: 'number'},
 
+            new_author_name: {type: 'string'},
+            new_author_date: {type: 'string'},
+
             data: {type: 'object'},
 
             created_at_block: {type: 'string'},
@@ -218,6 +221,7 @@ export const atomicassetsComponents = {
 
             mutable_data: {type: 'object'},
             immutable_data: {type: 'object'},
+            data: {type: 'object'},
 
             deleted_at_time: {type: 'string'},
             deleted_at_block: {type: 'string'},
