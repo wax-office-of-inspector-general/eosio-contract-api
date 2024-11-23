@@ -80,20 +80,25 @@ export default class AtomicMarketHandler extends ContractHandler {
 
     config: ConfigTableRow;
 
+    static views = [
+        'atomicmarket_assets_master', 'atomicmarket_auctions_master',
+        'atomicmarket_sales_master', 'atomicmarket_sale_prices_master',
+        'atomicmarket_stats_prices_master', 'atomicmarket_buyoffers_master',
+        'atomicmarket_template_buyoffers_master'
+    ];
+
+    static procedures = [
+        'update_atomicmarket_auction_mints',
+        'update_atomicmarket_buyoffer_mints',
+        'update_atomicmarket_sale_mints',
+        'update_atomicmarket_template_buyoffer_mints'
+    ]
+
     static async setup(client: PoolClient): Promise<boolean> {
         const existsQuery = await client.query(
             'SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)',
             ['public', 'atomicmarket_config']
         );
-
-        const views = [
-            'atomicmarket_assets_master', 'atomicmarket_auctions_master',
-            'atomicmarket_sales_master', 'atomicmarket_sale_prices_master',
-            'atomicmarket_stats_prices_master', 'atomicmarket_buyoffers_master',
-            'atomicmarket_template_buyoffers_master'
-        ];
-
-        const procedures = ['atomicmarket_auction_mints', 'atomicmarket_buyoffer_mints', 'atomicmarket_sale_mints'];
 
         if (!existsQuery.rows[0].exists) {
             logger.info('Could not find AtomicMarket tables. Create them now...');
@@ -101,14 +106,6 @@ export default class AtomicMarketHandler extends ContractHandler {
             await client.query(fs.readFileSync('./definitions/tables/atomicmarket_tables.sql', {
                 encoding: 'utf8'
             }));
-
-            for (const view of views) {
-                await client.query(fs.readFileSync('./definitions/views/' + view + '.sql', {encoding: 'utf8'}));
-            }
-
-            for (const procedure of procedures) {
-                await client.query(fs.readFileSync('./definitions/procedures/' + procedure + '.sql', {encoding: 'utf8'}));
-            }
 
             logger.info('AtomicMarket tables successfully created');
 
@@ -118,47 +115,23 @@ export default class AtomicMarketHandler extends ContractHandler {
         return false;
     }
 
-    static async upgrade(client: PoolClient, version: string): Promise<void> {
-        if (version === '1.2.2') {
-            await client.query('DROP VIEW IF EXISTS atomicmarket_assets_master CASCADE;');
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_assets_master.sql', {encoding: 'utf8'}));
-
-            await client.query(fs.readFileSync('./definitions/procedures/atomicmarket_auction_mints.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/procedures/atomicmarket_buyoffer_mints.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/procedures/atomicmarket_sale_mints.sql', {encoding: 'utf8'}));
+    static async beginUpgrade(client: PoolClient): Promise<void> {
+        for (const view of AtomicMarketHandler.views.reverse()) {
+            await client.query('DROP VIEW IF EXISTS "' + view + '" CASCADE;');
         }
 
-        if (version === '1.3.4') {
-            // hotfix broken filler
-            const data = await client.query('SELECT * FROM atomicmarket_buyoffers_assets WHERE buyoffer_id = 609405 AND asset_id = 1099601520940');
+        for (const procedure of AtomicMarketHandler.procedures.reverse()) {
+            await client.query('DROP PROCEDURE IF EXISTS "' + procedure + '" CASCADE;');
+        }
+    }
 
-            if (data.rowCount > 0) {
-                await client.query('DELETE FROM atomicmarket_buyoffers_assets WHERE buyoffer_id = 609405;');
-                await client.query('DELETE FROM atomicmarket_buyoffers WHERE buyoffer_id = 609405;');
-            }
+    static async finishUpgrade(client: PoolClient): Promise<void> {
+        for (const view of AtomicMarketHandler.views) {
+            await client.query(fs.readFileSync('./definitions/views/' + view + '.sql', {encoding: 'utf8'}));
         }
 
-        if (version === '1.3.13') {
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_stats_prices_master.sql', {encoding: 'utf8'}));
-        }
-
-        if (version === '1.3.20') {
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_auctions_master.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_buyoffers_master.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_sales_master.sql', {encoding: 'utf8'}));
-        }
-
-        if (version === '1.3.23') {
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_template_buyoffers_master.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/procedures/atomicmarket_template_buyoffer_mints.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_assets_master.sql', {encoding: 'utf8'}));
-        }
-
-        if (version === '1.3.24') {
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_auctions_master.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_buyoffers_master.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_template_buyoffers_master.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/views/atomicmarket_sales_master.sql', {encoding: 'utf8'}));
+        for (const procedure of AtomicMarketHandler.procedures) {
+            await client.query(fs.readFileSync('./definitions/procedures/' + procedure + '.sql', {encoding: 'utf8'}));
         }
     }
 

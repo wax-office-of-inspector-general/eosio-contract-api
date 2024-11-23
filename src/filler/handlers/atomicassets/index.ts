@@ -56,17 +56,19 @@ export default class AtomicAssetsHandler extends ContractHandler {
     config: ConfigTableRow;
     tokenconfigs: TokenConfigsTableRow;
 
+    static views = [
+        'atomicassets_assets_master', 'atomicassets_asset_mints_master', 'atomicassets_templates_master',
+        'atomicassets_schemas_master', 'atomicassets_collections_master', 'atomicassets_offers_master',
+        'atomicassets_transfers_master', 'atomicassets_moves_master'
+    ];
+
+    static procedures = ['update_atomicassets_mints'];
+
     static async setup(client: PoolClient): Promise<boolean> {
         const existsQuery = await client.query(
             'SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)',
             ['public', 'atomicassets_config']
         );
-
-        const views = [
-            'atomicassets_asset_mints_master', 'atomicassets_templates_master',
-            'atomicassets_schemas_master', 'atomicassets_collections_master', 'atomicassets_offers_master',
-            'atomicassets_transfers_master'
-        ];
 
         if (!existsQuery.rows[0].exists) {
             logger.info('Could not find AtomicAssets tables. Create them now...');
@@ -74,14 +76,6 @@ export default class AtomicAssetsHandler extends ContractHandler {
             await client.query(fs.readFileSync('./definitions/tables/atomicassets_tables.sql', {
                 encoding: 'utf8'
             }));
-
-            for (const view of views) {
-                await client.query(fs.readFileSync('./definitions/views/' + view + '.sql', {encoding: 'utf8'}));
-            }
-
-            await client.query(fs.readFileSync('./definitions/views/atomicassets_assets_master.sql', {encoding: 'utf8'}));
-
-            await client.query(fs.readFileSync('./definitions/procedures/atomicassets_mints.sql', {encoding: 'utf8'}));
 
             logger.info('AtomicAssets tables successfully created');
 
@@ -91,25 +85,23 @@ export default class AtomicAssetsHandler extends ContractHandler {
         return false;
     }
 
-    static async upgrade(client: PoolClient, version: string): Promise<void> {
-        if (version === '1.2.1') {
-            await client.query(fs.readFileSync('./definitions/procedures/atomicassets_mints.sql', {encoding: 'utf8'}));
+    static async beginUpgrade(client: PoolClient): Promise<void> {
+        for (const view of AtomicAssetsHandler.views.reverse()) {
+            await client.query('DROP VIEW IF EXISTS "' + view + '" CASCADE;');
         }
 
-        if (version === '1.2.2') {
-            await client.query(fs.readFileSync('./definitions/procedures/atomicassets_mints.sql', {encoding: 'utf8'}));
+        for (const procedure of AtomicAssetsHandler.procedures.reverse()) {
+            await client.query('DROP PROCEDURE IF EXISTS "' + procedure + '" CASCADE;');
+        }
+    }
 
-            await client.query('DROP VIEW IF EXISTS atomicassets_assets_master CASCADE;');
-            await client.query(fs.readFileSync('./definitions/views/atomicassets_assets_master.sql', {encoding: 'utf8'}));
-
-            await client.query('DROP VIEW IF EXISTS atomicassets_asset_mints_master CASCADE;');
-            await client.query(fs.readFileSync('./definitions/views/atomicassets_asset_mints_master.sql', {encoding: 'utf8'}));
+    static async finishUpgrade(client: PoolClient): Promise<void> {
+        for (const view of AtomicAssetsHandler.views) {
+            await client.query(fs.readFileSync('./definitions/views/' + view + '.sql', {encoding: 'utf8'}));
         }
 
-        if (version === '1.3.20') {
-            await client.query(fs.readFileSync('./definitions/views/atomicassets_schemas_master.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/views/atomicassets_templates_master.sql', {encoding: 'utf8'}));
-            await client.query(fs.readFileSync('./definitions/views/atomicassets_assets_master.sql', {encoding: 'utf8'}));
+        for (const procedure of AtomicAssetsHandler.procedures) {
+            await client.query(fs.readFileSync('./definitions/procedures/' + procedure + '.sql', {encoding: 'utf8'}));
         }
     }
 

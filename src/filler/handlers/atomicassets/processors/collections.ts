@@ -4,7 +4,7 @@ import { ContractDBTransaction } from '../../../database';
 import { EosioContractRow } from '../../../../types/eosio';
 import { ShipBlock } from '../../../../types/ship';
 import { eosioTimestampToDate } from '../../../../utils/eosio';
-import { CollectionsTableRow } from '../types/tables';
+import { AuthorSwapsTableRow, CollectionsTableRow } from '../types/tables';
 import { deserialize, ObjectSchema } from 'atomicassets';
 import { encodeDatabaseJson } from '../../../utils';
 
@@ -39,7 +39,22 @@ export function collectionProcessor(core: AtomicAssetsHandler, processor: DataPr
                 data: encodeDatabaseJson(deserializedData),
                 created_at_block: block.block_num,
                 created_at_time: eosioTimestampToDate(block.timestamp).getTime()
-            }, ['contract', 'collection_name'], ['created_at_block', 'created_at_time']);
+            }, ['contract', 'collection_name'], ['created_at_block', 'created_at_time', 'data']);
+        }, AtomicAssetsUpdatePriority.TABLE_COLLECTIONS.valueOf()
+    ));
+
+    destructors.push(processor.onContractRow(
+        contract, 'authorswaps',
+        async (db: ContractDBTransaction, block: ShipBlock, delta: EosioContractRow<AuthorSwapsTableRow>): Promise<void> => {
+            await db.update('atomicassets_collections', {
+                contract: contract,
+                collection_name: delta.value.collection_name,
+                new_author_name: delta.present ? delta.value.new_author : null,
+                new_author_date: delta.present ? delta.value.acceptance_date * 1000 : null,
+            }, {
+                str: 'contract = $1 AND collection_name = $2',
+                values: [contract, delta.value.collection_name]
+            }, ['contract', 'collection_name']);
         }, AtomicAssetsUpdatePriority.TABLE_COLLECTIONS.valueOf()
     ));
 
