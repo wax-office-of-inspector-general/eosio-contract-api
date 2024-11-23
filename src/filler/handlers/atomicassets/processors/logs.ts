@@ -4,18 +4,29 @@ import { ContractDBTransaction } from '../../../database';
 import { EosioActionTrace, EosioTransaction } from '../../../../types/eosio';
 import { ShipBlock } from '../../../../types/ship';
 import {
+    AcceptAuthorSwapActionData,
     AcceptOfferActionData,
     AddColAuthActionData,
     CancelOfferActionData,
-    CreateColActionData, CreateSchemaActionData,
-    DeclineOfferActionData, ExtendSchemaActionData,
-    ForbidNotifyActionData, LockTemplateActionData,
+    CreateAuthorSwapActionData,
+    CreateColActionData,
+    CreateSchemaActionData,
+    DeclineOfferActionData,
+    DeleteTemplateActionData,
+    ExtendSchemaActionData,
+    ForbidNotifyActionData,
+    LockTemplateActionData,
     LogBackAssetActionData,
     LogBurnAssetActionData,
     LogMintAssetActionData,
+    LogMoveActionData,
     LogNewOfferActionData,
     LogNewTemplateActionData,
     LogSetDataActionData,
+    LogSetSchemaTypeActionData,
+    LogSetTemplateDataActionData,
+    ReduceTemplateMaxSupplyActionData,
+    RejectAuthorSwapActionData,
     RemColAuthActionData,
     RemNotifyAccActionData,
     SetColDataActionData,
@@ -102,8 +113,8 @@ export function logProcessor(core: AtomicAssetsHandler, processor: DataProcessor
     ));
 
     destructors.push(processor.onActionTrace(
-        contract, 'move',
-        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<any>): Promise<void> => {
+        contract, 'logmove',
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<LogMoveActionData>): Promise<void> => {
             await db.logTrace(block, tx, trace, trace.act.data);
         }, AtomicAssetsUpdatePriority.LOGS.valueOf()
     ));
@@ -160,21 +171,21 @@ export function logProcessor(core: AtomicAssetsHandler, processor: DataProcessor
 
     destructors.push(processor.onActionTrace(
         contract, 'createauswap',
-        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<any>): Promise<void> => {
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<CreateAuthorSwapActionData>): Promise<void> => {
             await db.logTrace(block, tx, trace, trace.act.data);
         }, AtomicAssetsUpdatePriority.LOGS.valueOf()
     ));
 
     destructors.push(processor.onActionTrace(
         contract, 'acceptauswap',
-        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<any>): Promise<void> => {
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<AcceptAuthorSwapActionData>): Promise<void> => {
             await db.logTrace(block, tx, trace, trace.act.data);
         }, AtomicAssetsUpdatePriority.LOGS.valueOf()
     ));
 
     destructors.push(processor.onActionTrace(
         contract, 'rejectauswap',
-        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<any>): Promise<void> => {
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<RejectAuthorSwapActionData>): Promise<void> => {
             await db.logTrace(block, tx, trace, trace.act.data);
         }, AtomicAssetsUpdatePriority.LOGS.valueOf()
     ));
@@ -201,21 +212,21 @@ export function logProcessor(core: AtomicAssetsHandler, processor: DataProcessor
 
     destructors.push(processor.onActionTrace(
         contract, 'deltemplate',
-        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<any>): Promise<void> => {
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<DeleteTemplateActionData>): Promise<void> => {
             await db.logTrace(block, tx, trace, trace.act.data);
         }, AtomicAssetsUpdatePriority.LOGS.valueOf()
     ));
 
     destructors.push(processor.onActionTrace(
         contract, 'redtemplmax',
-        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<any>): Promise<void> => {
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<ReduceTemplateMaxSupplyActionData>): Promise<void> => {
             await db.logTrace(block, tx, trace, trace.act.data);
         }, AtomicAssetsUpdatePriority.LOGS.valueOf()
     ));
 
     destructors.push(processor.onActionTrace(
         contract, 'logsetdatatl',
-        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<any>): Promise<void> => {
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<LogSetTemplateDataActionData>): Promise<void> => {
             await db.logTrace(block, tx, trace, trace.act.data);
         }, AtomicAssetsUpdatePriority.LOGS.valueOf()
     ));
@@ -237,7 +248,7 @@ export function logProcessor(core: AtomicAssetsHandler, processor: DataProcessor
 
     destructors.push(processor.onActionTrace(
         contract, 'setschematyp',
-        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<any>): Promise<void> => {
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<LogSetSchemaTypeActionData>): Promise<void> => {
             await db.logTrace(block, tx, trace, trace.act.data);
         }, AtomicAssetsUpdatePriority.LOGS.valueOf()
     ));

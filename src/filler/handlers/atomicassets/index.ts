@@ -59,7 +59,7 @@ export default class AtomicAssetsHandler extends ContractHandler {
     static views = [
         'atomicassets_assets_master', 'atomicassets_asset_mints_master', 'atomicassets_templates_master',
         'atomicassets_schemas_master', 'atomicassets_collections_master', 'atomicassets_offers_master',
-        'atomicassets_transfers_master'
+        'atomicassets_transfers_master', 'atomicassets_moves_master'
     ];
 
     static procedures = ['update_atomicassets_mints'];

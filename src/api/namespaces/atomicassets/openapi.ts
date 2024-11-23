@@ -40,6 +40,24 @@ export function generateTransferSchema(assetSchema: string): any {
     };
 }
 
+export function generateMoveSchema(assetSchema: string): any {
+    return {
+        type: 'object',
+        properties: {
+            contract: {type: 'string'},
+            transfer_id: {type: 'string'},
+            sender_name: {type: 'string'},
+            recipient_name: {type: 'string'},
+            memo: {type: 'string'},
+
+            assets: {type: 'array', items: {'$ref': '#/components/schemas/' + assetSchema}},
+
+            created_at_block: {type: 'string'},
+            created_at_time: {type: 'string'}
+        }
+    };
+}
+
 export const atomicassetsComponents = {
     'Asset': {
         type: 'object',
@@ -245,7 +263,8 @@ export const atomicassetsComponents = {
         }
     },
     'Offer': generateOfferSchema('Asset'),
-    'Transfer': generateTransferSchema('Asset')
+    'Transfer': generateTransferSchema('Asset'),
+    'Move': generateMoveSchema('Asset')
 };
 
 export const greylistFilterParameters = [

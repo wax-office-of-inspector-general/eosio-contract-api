@@ -48,12 +48,12 @@ export function collectionProcessor(core: AtomicAssetsHandler, processor: DataPr
         async (db: ContractDBTransaction, block: ShipBlock, delta: EosioContractRow<AuthorSwapsTableRow>): Promise<void> => {
             await db.update('atomicassets_collections', {
                 contract: contract,
-                collection_name: delta.scope,
+                collection_name: delta.value.collection_name,
                 new_author_name: delta.present ? delta.value.new_author : null,
                 new_author_date: delta.present ? delta.value.acceptance_date * 1000 : null,
             }, {
                 str: 'contract = $1 AND collection_name = $2',
-                values: [contract, delta.scope]
+                values: [contract, delta.value.collection_name]
             }, ['contract', 'collection_name']);
         }, AtomicAssetsUpdatePriority.TABLE_COLLECTIONS.valueOf()
     ));

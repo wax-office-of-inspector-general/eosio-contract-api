@@ -5,9 +5,9 @@ import { EosioActionTrace, EosioTransaction } from '../../../../types/eosio';
 import {
     LogBackAssetActionData,
     LogBurnAssetActionData,
-    LogMintAssetActionData,
+    LogMintAssetActionData, LogMoveActionData,
     LogSetDataActionData,
-    LogTransferActionData, MoveActionData
+    LogTransferActionData
 } from '../types/actions';
 import { ShipBlock } from '../../../../types/ship';
 import { eosioTimestampToDate, splitEosioToken } from '../../../../utils/eosio';
@@ -194,8 +194,8 @@ export function assetProcessor(core: AtomicAssetsHandler, processor: DataProcess
     ));
 
     destructors.push(processor.onActionTrace(
-        contract, 'move',
-        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<MoveActionData>): Promise<void> => {
+        contract, 'logmove',
+        async (db: ContractDBTransaction, block: ShipBlock, tx: EosioTransaction, trace: EosioActionTrace<LogMoveActionData>): Promise<void> => {
             await db.update('atomicassets_assets', {
                 owner: trace.act.data.owner,
                 holder: trace.act.data.to,
@@ -204,9 +204,29 @@ export function assetProcessor(core: AtomicAssetsHandler, processor: DataProcess
                 updated_at_block: block.block_num,
                 updated_at_time: eosioTimestampToDate(block.timestamp).getTime(),
             }, {
-                str: 'contract = $1 AND asset_id = ANY ($2) AND owner = $3',
-                values: [contract, trace.act.data.asset_ids, trace.act.data.from]
+                str: 'contract = $1 AND asset_id = ANY ($2)',
+                values: [contract, trace.act.data.asset_ids]
             }, ['contract', 'asset_id']);
+
+            if (core.args.store_transfers) {
+                await db.insert('atomicassets_moves', {
+                    contract: contract,
+                    move_id: trace.global_sequence,
+                    sender: trace.act.data.from,
+                    recipient: trace.act.data.to,
+                    memo: String(trace.act.data.memo).substr(0, 256),
+                    txid: Buffer.from(tx.id, 'hex'),
+                    created_at_block: block.block_num,
+                    created_at_time: eosioTimestampToDate(block.timestamp).getTime()
+                }, ['contract', 'move_id']);
+
+                await db.insert('atomicassets_moves_assets', trace.act.data.asset_ids.map((assetID, index) => ({
+                    move_id: trace.global_sequence,
+                    contract: contract,
+                    index: index + 1,
+                    asset_id: assetID
+                })), ['contract', 'move_id', 'asset_id']);
+            }
 
             notifier.sendActionTrace('transfers', block, tx, trace);
         }, AtomicAssetsUpdatePriority.ACTION_UPDATE_ASSET.valueOf()
